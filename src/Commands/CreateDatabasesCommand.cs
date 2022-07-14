@@ -9,7 +9,7 @@ public class CreateDatabasesCommand : BaseCommand
 {
     public async Task<int> Execute()
     {
-        var config = ParseConfig(ConfigurationFile);
+        var config = ParseConfig();
         await using var connection =
             new SqlConnection(
                 $"Data Source=127.0.0.1,{config.Port};User Id=sa;Password={config.SaPassword};TrustServerCertificate=True;");

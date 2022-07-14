@@ -8,7 +8,7 @@ public class InitializeCommand : BaseCommand
 {
     public async Task<int> Execute(ContainerFactory containerFactory)
     {
-        var config = ParseConfig(ConfigurationFile);
+        var config = ParseConfig();
 
         await containerFactory.StartContainer(config);
         await containerFactory.VerifyContainerHealthy(config);

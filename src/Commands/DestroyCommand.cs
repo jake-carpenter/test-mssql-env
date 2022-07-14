@@ -8,7 +8,7 @@ public class DestroyCommand : BaseCommand
 {
     public Task<int> Execute(ContainerFactory databaseContainerFactory)
     {
-        var config = ParseConfig(ConfigurationFile);
+        var config = ParseConfig();
         databaseContainerFactory.DestroyContainer(config);
         return Task.FromResult(0);
     }
