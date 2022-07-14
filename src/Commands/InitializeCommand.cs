@@ -4,11 +4,8 @@ using TestMssqlEnv.Infrastructure;
 namespace TestMssqlEnv.Commands;
 
 [Verb("init", HelpText = "Initialize a MSSQL database container")]
-public class InitializeDatabaseCommand : BaseCommand
+public class InitializeCommand : BaseCommand
 {
-    [Option('c', "configuration", HelpText = "Relative or full path to a configuration file", Required = true)]
-    public string ConfigurationFile { get; init; }
-    
     public async Task<int> Execute(ContainerFactory containerFactory)
     {
         var config = ParseConfig(ConfigurationFile);

@@ -1,4 +1,5 @@
 using Dapper;
+using Ductus.FluentDocker;
 using Ductus.FluentDocker.Builders;
 using Ductus.FluentDocker.Model.Containers;
 using Ductus.FluentDocker.Services;
@@ -52,5 +53,27 @@ public class ContainerFactory
         }
 
         throw new Exception("Database connection timeout exceeded.");
+    }
+
+    public void DestroyContainer(Config config)
+    {
+        var dockerServices = Fd.Discover();
+        foreach (var dockerService in dockerServices)
+        {
+            var containers = dockerService.GetContainers(all: true);
+            
+            foreach (var container in containers)
+            {
+                if (container.Name != config.ContainerName)
+                    continue;
+
+                if (container.State == ServiceRunningState.Running)
+                {
+                    container.Stop();
+                }
+
+                container.Remove(force: true);
+            }
+        }
     }
 }

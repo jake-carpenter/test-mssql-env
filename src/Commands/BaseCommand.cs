@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using CommandLine;
 using Microsoft.Extensions.Configuration;
 using TestMssqlEnv.Infrastructure;
 
@@ -6,6 +7,9 @@ namespace TestMssqlEnv.Commands;
 
 public abstract class BaseCommand
 {
+    [Option('c', "configuration", HelpText = "Relative or full path to a configuration file", Required = true)]
+    public string ConfigurationFile { get; init; }
+    
     protected static Config ParseConfig(string configurationFile)
     {
         var validPathToJsonRegex = new Regex("\\w+(\\.json)");

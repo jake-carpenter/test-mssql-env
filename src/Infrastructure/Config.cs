@@ -8,4 +8,5 @@ public class Config
     public string SaPassword { get; init; }
     public string ContainerName { get; init; }
     public int Port { get; init; }
+    public ICollection<string> DatabasesToCreate { get; init; } = new List<string>();
 }
