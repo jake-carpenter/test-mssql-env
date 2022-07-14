@@ -5,10 +5,11 @@ using TestMssqlEnv.Infrastructure;
 var containerFactory = new ContainerFactory();
 
 return await Parser.Default
-    .ParseArguments<InitializeCommand, DestroyCommand>(args)
+    .ParseArguments<InitializeCommand, DestroyCommand, CreateDatabasesCommand>(args)
     .MapResult(
         (InitializeCommand command) => command.Execute(containerFactory),
         (DestroyCommand command) => command.Execute(containerFactory), 
+        (CreateDatabasesCommand command) => command.Execute(),
         errors =>
         {
             foreach (var error in errors)
