@@ -10,6 +10,16 @@ public class SchemaWriter
         "SET ANSI_PADDING ON", "SET ANSI_NULLS ON", "SET QUOTED_IDENTIFIER ON"
     };
 
+    public async Task CreateDatabases(string connectionString, Config config)
+    {
+        await using var connection = new SqlConnection(connectionString);
+
+        foreach (var database in config.DatabasesToCreate)
+        {
+            await connection.ExecuteAsync($"CREATE DATABASE {database}");
+        }
+    }
+
     public async Task<IReadOnlyList<SqlStatements>> ReadSqlStatements(string workingDirectory, Config config)
     {
         var sqlStatements = new List<SqlStatements>();
@@ -42,7 +52,7 @@ public class SchemaWriter
         return sqlStatements;
     }
 
-    public async Task<int> WriteSqlStatements(string connectionString,  IReadOnlyCollection<SqlStatements> statements)
+    public async Task<int> WriteSqlStatements(string connectionString, IReadOnlyCollection<SqlStatements> statements)
     {
         foreach (var statementSet in statements)
         {
