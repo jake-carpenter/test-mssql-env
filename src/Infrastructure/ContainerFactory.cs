@@ -1,16 +1,23 @@
 using Dapper;
 using Ductus.FluentDocker;
 using Ductus.FluentDocker.Builders;
-using Ductus.FluentDocker.Model.Containers;
+using Ductus.FluentDocker.Extensions;
 using Ductus.FluentDocker.Services;
 using Microsoft.Data.SqlClient;
+using Spectre.Console;
+using TestMssqlEnv.Commands;
 
 namespace TestMssqlEnv.Infrastructure;
 
 public class ContainerFactory
 {
-    public async Task StartContainer(Config config)
+    public async Task StartContainer(Config config, BaseCommand command)
     {
+        AnsiConsole.MarkupLine("Creating container:");
+        AnsiConsole.MarkupLine($"\tImage:\t[yellow]{config.DockerImage}[/]");
+        AnsiConsole.MarkupLine($"\tName:\t[yellow]{config.ContainerName}[/]");
+        AnsiConsole.MarkupLine($"\tPort:\t[yellow]{config.Port.ToString()}[/]");
+
         var container = new Builder()
             .UseContainer()
             .UseImage(config.DockerImage)
@@ -21,59 +28,80 @@ public class ContainerFactory
             .ReuseIfExists()
             .ExposePort(config.Port, 1433)
             .Build();
+        
+        Logger.MarkupLineWhenVerbose($"[grey]\t Id:\t{container.Id}[/]", command.Verbose);
 
         if (container.State != ServiceRunningState.Running)
         {
+            Logger.MarkupLineWhenVerbose("Starting container...", command.Verbose);
             container.Start();
+            container.WaitForRunning();
+            Logger.MarkupLineWhenVerbose("[green]Done[/]", command.Verbose);
         }
     }
 
-    public async Task VerifyContainerHealthy(Config config)
+    public async Task VerifyContainerHealthy(Config config, BaseCommand command)
     {
-        var timeoutInSeconds = 30;
-        var connectionString =
-            $"Data Source=127.0.0.1,{config.Port};User Id=sa;Password={config.SaPassword};TrustServerCertificate=True;";
-
-        var timeLimit = DateTime.Now.AddSeconds(timeoutInSeconds);
-        await using var connection = new SqlConnection(connectionString);
+        var failures = 0;
+        var timeLimit = DateTime.Now.AddSeconds(config.HealthCheckTimeoutInSeconds);
+        Exception latestException = null;
+        await using var connection = new SqlConnection(config.ConnectionString);
 
         while (timeLimit > DateTime.Now)
         {
-            Console.WriteLine("Trying to connect...");
+            await Task.Delay(3000);
+
             try
             {
                 await connection.ExecuteAsync("SELECT 1");
-                Console.WriteLine("Connected");
+                AnsiConsole.MarkupLine("Container is [green]healthy[/]");
                 return;
             }
             catch (Exception ex)
             {
-                await Task.Delay(3000);
+                AnsiConsole.MarkupLine($"[fuchsia]Failed attempt #{++failures}[/]");
+                Logger.MarkupLineWhenVerbose($"[grey]{ex.Message.TrimEnd()}[/]", command.Verbose);
+                latestException = ex;
             }
         }
 
+        AnsiConsole.WriteException(latestException!, ExceptionFormats.ShortenEverything);
         throw new Exception("Database connection timeout exceeded.");
     }
 
-    public void DestroyContainer(Config config)
+    public IEnumerable<IContainerService> FindExistingContainer(Config config)
     {
         var dockerServices = Fd.Discover();
         foreach (var dockerService in dockerServices)
         {
             var containers = dockerService.GetContainers(all: true);
-            
+
             foreach (var container in containers)
             {
                 if (container.Name != config.ContainerName)
                     continue;
 
-                if (container.State == ServiceRunningState.Running)
-                {
-                    container.Stop();
-                }
-
-                container.Remove(force: true);
+                yield return container;
             }
+        }
+    }
+
+    public void DestroyContainers(Config config)
+    {
+        var containers = FindExistingContainer(config).ToArray();
+        AnsiConsole.MarkupLine($"Found {containers.Length} existing container(s) to destroy");
+
+        foreach (var container in containers)
+        {
+            if (container.State == ServiceRunningState.Running)
+            {
+                AnsiConsole.MarkupLine($"Stopping [yellow]{container.Name}[/]...");
+                container.Stop();
+            }
+
+            AnsiConsole.MarkupLine($"Destroying [yellow]{container.Name}[/]...");
+            container.Remove(force: true);
+            AnsiConsole.MarkupLine("[green]Done[/]");
         }
     }
 }

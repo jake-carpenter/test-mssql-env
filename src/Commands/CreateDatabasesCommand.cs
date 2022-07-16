@@ -9,9 +9,11 @@ public class CreateDatabasesCommand : BaseCommand
     public async Task<int> Execute(SchemaWriter schemaWriter)
     {
         var config = ParseConfig();
-        var connectionString = BuildConnectionString(config);
-        await schemaWriter.CreateDatabases(connectionString, config);
 
+        await Logger.WrapWithOutputHeader(
+            "Create databases",
+            () => schemaWriter.CreateDatabases(config));
+        
         return 0;
     }
 }

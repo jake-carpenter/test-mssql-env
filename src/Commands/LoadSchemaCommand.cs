@@ -9,8 +9,12 @@ public class LoadSchemaCommand : BaseCommand
     public async Task<int> Execute(SchemaWriter schemaWriter)
     {
         var config = ParseConfig();
-        var connectionString = BuildConnectionString(config);
         var workingDirectory = Path.GetDirectoryName(ConfigurationFile);
-        return await schemaWriter.ReadAndWriteSqlStatements(workingDirectory, connectionString, config);
+
+        await Logger.WrapWithOutputHeader(
+            "Loading database schemas",
+            () => schemaWriter.ReadAndWriteSqlStatements(workingDirectory, config, this));
+
+        return 0;
     }
 }

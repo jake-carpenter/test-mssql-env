@@ -1,5 +1,7 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
+using Spectre.Console;
+using TestMssqlEnv.Commands;
 
 namespace TestMssqlEnv.Infrastructure;
 
@@ -10,17 +12,21 @@ public class SchemaWriter
         "SET ANSI_PADDING ON", "SET ANSI_NULLS ON", "SET QUOTED_IDENTIFIER ON"
     };
 
-    public async Task CreateDatabases(string connectionString, Config config)
+    public async Task CreateDatabases(Config config)
     {
-        await using var connection = new SqlConnection(connectionString);
+        await using var connection = new SqlConnection(config.ConnectionString);
 
         foreach (var database in config.DatabasesToCreate)
         {
+            AnsiConsole.MarkupLine($"Creating database: [yellow]{database}[/]");
             await connection.ExecuteAsync($"CREATE DATABASE {database}");
         }
     }
 
-    public async Task<IReadOnlyList<SqlStatements>> ReadSqlStatements(string workingDirectory, Config config)
+    public async Task<IReadOnlyList<SqlStatements>> ReadSqlStatements(
+        string workingDirectory,
+        Config config,
+        BaseCommand command)
     {
         var sqlStatements = new List<SqlStatements>();
 
@@ -41,9 +47,12 @@ public class SchemaWriter
                 var sqlCommands = text
                     .Split("GO")
                     .Select(sql => sql.Trim())
-                    .Where(sql => sql.Length > 0 && !_statementsToSkip.Contains(sql));
+                    .Where(sql => sql.Length > 0 && !_statementsToSkip.Contains(sql))
+                    .ToArray();
 
                 commandsForDb.AddRange(sqlCommands);
+                Logger.MarkupLineWhenVerbose(
+                    $"[grey]Read {sqlCommands.Length} SQL statements from file: {fileInfo.Name}[/]", command.Verbose);
             }
 
             sqlStatements.Add(new SqlStatements(database, commandsForDb));
@@ -52,10 +61,13 @@ public class SchemaWriter
         return sqlStatements;
     }
 
-    public async Task<int> WriteSqlStatements(string connectionString, IReadOnlyCollection<SqlStatements> statements)
+    public async Task<int> WriteSqlStatements(string connectionString, IReadOnlyList<SqlStatements> statements)
     {
         foreach (var statementSet in statements)
         {
+            AnsiConsole.MarkupLine(
+                $"Executing {statementSet.Count()} SQL statements on [yellow]{statementSet.Database}[/]");
+
             var connectionStringWithDb = $"{connectionString};Database={statementSet.Database}";
             await using var connection = new SqlConnection(connectionStringWithDb);
             await connection.OpenAsync();
@@ -69,9 +81,9 @@ public class SchemaWriter
         return 0;
     }
 
-    public async Task<int> ReadAndWriteSqlStatements(string workingDirectory, string connectionString, Config config)
+    public async Task<int> ReadAndWriteSqlStatements(string workingDirectory, Config config, BaseCommand command)
     {
-        var statements = await ReadSqlStatements(workingDirectory, config);
-        return await WriteSqlStatements(connectionString, statements);
+        var statements = await ReadSqlStatements(workingDirectory, config, command);
+        return await WriteSqlStatements(config.ConnectionString, statements);
     }
 }
