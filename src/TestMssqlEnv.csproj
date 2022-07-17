@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>0.0.1</Version>
+    <VersionPrefix>0.0.2</VersionPrefix>
     <PackAsTool>true</PackAsTool>
     <PackageId>test-mssql-env</PackageId>
     <ToolCommandName>test-mssql-env</ToolCommandName>

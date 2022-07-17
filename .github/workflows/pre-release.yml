@@ -1,0 +1,27 @@
+name: Nuget pre-release
+on:
+  push:
+    tags:
+      - '*-pre'
+    
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 6.0.x
+    - name: Restore dependencies
+      run: dotnet restore --nologo
+      working-directory: ./src
+    - name: Build
+      run: dotnet build -c Release --no-restore --nologo
+      working-directory: ./src
+    - name: Pack
+      run: dotnet pack -c Release --no-build --nologo /p:Version=0.0.1-pre-$GITHUB_RUN_NUMBER -o ../nupkg
+      working-directory: ./src
+    - name: Publish
+      run: dotnet nuget push "*.nupkg" -k ${{secrets.NUGET_API_KEY}} -n -s https://api.nuget.org/v3/index.json
+      working-directory: ./nupkg
