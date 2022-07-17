@@ -14,19 +14,33 @@ public class SchemaWriter
 
     public async Task CreateDatabases(Config config)
     {
-        await using var connection = new SqlConnection(config.ConnectionString);
-
-        foreach (var database in config.DatabasesToCreate)
+        try
         {
-            AnsiConsole.MarkupLine($"Creating database: [yellow]{database}[/]");
-            await connection.ExecuteAsync($"CREATE DATABASE {database}");
+            await using var connection = new SqlConnection(config.ConnectionString);
+
+            foreach (var database in config.DatabasesToCreate)
+            {
+                AnsiConsole.MarkupLine($"Creating database: [yellow]{database}[/]");
+                await connection.ExecuteAsync($"CREATE DATABASE {database}");
+            }
+
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Failed to create database", ex);
         }
     }
 
-    public async Task<IReadOnlyList<SqlStatements>> ReadSqlStatements(
+    public async Task ReadAndWriteSqlStatements(string workingDirectory, Config config, BaseCommand command)
+    {
+        var statements = await ReadSqlStatements(workingDirectory, config, command.Verbose);
+        await WriteSqlStatements(config.ConnectionString, statements, command.Verbose);
+    }
+
+    private async Task<IReadOnlyList<SqlStatements>> ReadSqlStatements(
         string workingDirectory,
         Config config,
-        BaseCommand command)
+        bool verbose)
     {
         var sqlStatements = new List<SqlStatements>();
 
@@ -52,7 +66,7 @@ public class SchemaWriter
 
                 commandsForDb.AddRange(sqlCommands);
                 Logger.MarkupLineWhenVerbose(
-                    $"[grey]Read {sqlCommands.Length} SQL statements from file: {fileInfo.Name}[/]", command.Verbose);
+                    $"[grey]Read {sqlCommands.Length} SQL statements from file: {fileInfo.Name}[/]", verbose);
             }
 
             sqlStatements.Add(new SqlStatements(database, commandsForDb));
@@ -61,7 +75,10 @@ public class SchemaWriter
         return sqlStatements;
     }
 
-    public async Task<int> WriteSqlStatements(string connectionString, IReadOnlyList<SqlStatements> statements)
+    private async Task WriteSqlStatements(
+        string connectionString,
+        IReadOnlyList<SqlStatements> statements,
+        bool verbose)
     {
         foreach (var statementSet in statements)
         {
@@ -74,16 +91,26 @@ public class SchemaWriter
 
             foreach (var statement in statementSet)
             {
-                await connection.ExecuteAsync(statement);
+                await TryExecuteSql(statement, statementSet.Database, verbose, connection);
             }
         }
-
-        return 0;
     }
 
-    public async Task<int> ReadAndWriteSqlStatements(string workingDirectory, Config config, BaseCommand command)
+    private async Task TryExecuteSql(string statement, string database, bool verbose, SqlConnection connection)
     {
-        var statements = await ReadSqlStatements(workingDirectory, config, command);
-        return await WriteSqlStatements(config.ConnectionString, statements);
+        try
+        {
+            await connection.ExecuteAsync(statement);
+        }
+        catch (Exception ex)
+        {
+            if (verbose)
+            {
+                AnsiConsole.MarkupLine("[red]Failed SQL statement:[/]");
+                AnsiConsole.MarkupLine($"[grey]{statement}[/]");
+            }
+
+            throw new Exception($"Error while executing statements on database {database}", ex);
+        }
     }
 }

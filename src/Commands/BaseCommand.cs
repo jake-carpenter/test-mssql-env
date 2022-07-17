@@ -19,21 +19,20 @@ public abstract class BaseCommand
     {
         var validPathToJsonRegex = new Regex("\\w+(\\.json)");
         if (!validPathToJsonRegex.IsMatch(ConfigurationFile))
-            throw new ArgumentException("Invalid path to JSON configuration file provided with -c flag");
+            throw new Exception("Invalid path to JSON configuration file provided with -c flag");
 
         var path = Path.Combine(Directory.GetCurrentDirectory(), ConfigurationFile);
         var fileInfo = new FileInfo(path);
 
         if (!fileInfo.Exists)
-            throw new ArgumentException($"Invalid configuration file provided: {fileInfo.FullName}");
+            throw new Exception($"Invalid configuration file provided: {fileInfo.FullName}");
 
         using var stream = fileInfo.OpenRead();
         var configuration = new ConfigurationBuilder().AddJsonStream(stream).Build();
         var config = new Config();
         configuration.Bind(config);
-
         MaybeOutputConfig(config, fileInfo.FullName);
-
+        
         return config;
     }
 

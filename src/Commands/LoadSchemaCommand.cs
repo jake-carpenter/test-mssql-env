@@ -13,7 +13,7 @@ public class LoadSchemaCommand : BaseCommand
 
         await Logger.WrapWithOutputHeader(
             "Loading database schemas",
-            () => schemaWriter.ReadAndWriteSqlStatements(workingDirectory, config, this));
+            () => schemaWriter.ReadAndWriteSqlStatements(workingDirectory!, config, this));
 
         return 0;
     }

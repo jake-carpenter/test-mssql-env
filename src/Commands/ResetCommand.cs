@@ -26,14 +26,16 @@ public class ResetCommand : BaseCommand
                 await Logger.WrapWithOutputHeader(
                     $"Waiting for healthy container (up to {config.HealthCheckTimeoutInSeconds} seconds)",
                     () => containerFactory.VerifyContainerHealthy(config, this));
-
+                
                 await Logger.WrapWithOutputHeader(
                     "Creating databases",
                     () => schemaWriter.CreateDatabases(config));
-
+                
                 await Logger.WrapWithOutputHeader(
                     "Loading database schemas",
-                    () => schemaWriter.ReadAndWriteSqlStatements(workingDirectory, config, this));
+                    () => schemaWriter.ReadAndWriteSqlStatements(workingDirectory!, config, this));
+
+                return 0;
             });
 
 

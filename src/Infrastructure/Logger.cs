@@ -13,7 +13,7 @@ public static class Logger
         action();
         AnsiConsole.WriteLine();
     }
-    
+
     public static async Task WrapWithOutputHeader(string title, Func<Task> action)
     {
         _rule.Title = title;
@@ -21,7 +21,7 @@ public static class Logger
         await action();
         AnsiConsole.WriteLine();
     }
-    
+
     public static void MarkupLineWhenVerbose(string message, bool verbose)
     {
         if (verbose)

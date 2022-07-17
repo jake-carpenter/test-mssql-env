@@ -17,7 +17,7 @@ public class InitializeCommand : BaseCommand
         await Logger.WrapWithOutputHeader(
             $"Waiting for healthy container (up to {config.HealthCheckTimeoutInSeconds} seconds)",
             () => containerFactory.VerifyContainerHealthy(config, this));
-        
+
         return 0;
     }
 }

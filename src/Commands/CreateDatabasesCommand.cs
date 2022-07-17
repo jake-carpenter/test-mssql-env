@@ -13,7 +13,7 @@ public class CreateDatabasesCommand : BaseCommand
         await Logger.WrapWithOutputHeader(
             "Create databases",
             () => schemaWriter.CreateDatabases(config));
-        
+
         return 0;
     }
 }
