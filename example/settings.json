@@ -1,0 +1,15 @@
+{
+    "dockerImage": "mcr.microsoft.com/azure-sql-edge",
+    "saPassword": "Password123",
+    "containerName": "example-db",
+    "port": 9223,
+    "healthCheckTimeoutInSeconds": 30,
+    "databasesToCreate": [
+        "Foo", "Bar"
+    ],
+    "sqlFilesToExecute": {
+        "Foo": [
+            "./sql/Foo.sql"
+        ]
+    }
+}
