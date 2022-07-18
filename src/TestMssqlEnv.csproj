@@ -8,11 +8,17 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <VersionPrefix>0.0.2</VersionPrefix>
     <PackAsTool>true</PackAsTool>
     <PackageId>test-mssql-env</PackageId>
     <ToolCommandName>test-mssql-env</ToolCommandName>
-    <PackageOutputPath>./nupkg</PackageOutputPath>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Title>Test MSSQL Environment</Title>
+    <Authors>Jake Carpenter</Authors>
+    <Description>CLI dotnet tool to quickly create a Docker container for a SQL Server / Azure SQL Edge and load a schema into it.</Description>
+    <PackageProjectUrl>https://github.com/jake-carpenter/test-mssql-env</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/jake-carpenter/test-mssql-env</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
